@@ -1,0 +1,45 @@
+
+name: Build GO CRUZ Android App
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'go_cruz_flutter_project.zip'
+      - '.github/workflows/build.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get project
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Extract uploaded project
+        run: |
+          unzip go_cruz_flutter_project.zip -d /tmp/go-cruz
+
+      - name: Create Android project
+        run: |
+          flutter create --project-name go_cruz_app go_cruz_flutter
+          cp -r /tmp/go-cruz/go_cruz_flutter/lib/. go_cruz_flutter/lib/
+          cp -r /tmp/go-cruz/go_cruz_flutter/assets/. go_cruz_flutter/assets/
+          cp /tmp/go-cruz/go_cruz_flutter/pubspec.yaml go_cruz_flutter/pubspec.yaml
+
+      - name: Build test APK
+        run: |
+          cd go_cruz_flutter
+          flutter pub get
+          flutter build apk --debug
+
+      - name: Save APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-cruz-test-apk
+          path: go_cruz_flutter/build/app/outputs/flutter-apk/app-debug.apk
